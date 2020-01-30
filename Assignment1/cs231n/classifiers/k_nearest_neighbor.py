@@ -77,6 +77,7 @@ class KNearestNeighbor(object):
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+                dists[i, j] = np.sqrt(np.sum(np.square(X[i] - self.X_train[j])))
                 pass
 
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -101,6 +102,7 @@ class KNearestNeighbor(object):
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+            dists[i, :] = np.sqrt(np.sum(np.square(X[i] - self.X_train[:]), axis=1))
             pass
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -131,6 +133,11 @@ class KNearestNeighbor(object):
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        # reference: https://github.com/lightaime/cs231n/blob/master/assignment1/cs231n/classifiers/k_nearest_neighbor_ss.py
+        M = np.dot(X, self.X_train.T)
+        te = np.square(X).sum(axis = 1)
+        tr = np.square(self.X_train).sum(axis = 1)
+        dists = np.sqrt(-2*M+tr+np.matrix(te).T) #tr add to line, te add to row
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -164,6 +171,17 @@ class KNearestNeighbor(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+            # range(k) will generate an array start from 0 to k;
+            # np.argsort(dists[i]) will pick up the first k elements, which means the first kth closest distance index;
+            closest_y = self.y_train[np.argsort(dists[i])[:k]]
+            #########################################################################
+            # TEST: run the following test code to check                            #
+            # import numpy as np                                                    #
+            # randArray = np.random.rand(5)                                         #
+            # randArray_sorted_index = np.argsort(randArray)                        #
+            # randArray                                                             #
+            # randArray[randArray_sorted_index[range(4)]]                           #
+            #########################################################################
             pass
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -176,6 +194,31 @@ class KNearestNeighbor(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+            #########################################################################
+            # TEST: run the following test code to check                            #
+            # import numpy as np                                                    #
+            # a = np.array([0, 3, 0, 1, 0, 1, 2, 1, 0, 0, 0, 0, 1, 3, 5])           #
+            # unique, counts = np.unique(a, return_counts=True)                     #
+            # collection = dict(zip(unique, counts))                                #
+            # collection ## {0: 7, 1: 4, 2: 1, 3: 2, 5: 1}                          #
+            # list(collection) ## [0, 1, 2, 3, 5]                                   #
+            # collection[0] ## 7                                                    #
+            # list(collection)[0] ## 0                                              #
+            # NOTE: This way doesn't work, since the 0-value index is removed;      #
+            #########################################################################
+            # TEST: run the following test code to check                            #
+            # import numpy as np                                                    #
+            # a = np.array([0, 3, 0, 1, 0, 1, 2, 1, 0, 0, 0, 0, 1, 3, 5])           #
+            # np.bincount(a)                                                        #
+            # np.argmax(np.bincount(a))                                             #
+            # NOTE: This works;                                                     #
+            #########################################################################
+
+            # reference https://blog.csdn.net/bingo_6/article/details/80205341
+            if np.shape(np.shape(closest_y))[0] !=1:
+                closest_y=np.squeeze(closest_y)
+
+            y_pred[i] = np.argmax(np.bincount(closest_y))
             pass
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
