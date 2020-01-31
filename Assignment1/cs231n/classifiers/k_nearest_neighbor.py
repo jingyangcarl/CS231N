@@ -77,7 +77,7 @@ class KNearestNeighbor(object):
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-                dists[i, j] = np.sqrt(np.sum(np.square(X[i] - self.X_train[j])))
+                dists[i][j] = np.sqrt(np.sum(np.square(X[i] - self.X_train[j])))
                 pass
 
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -102,7 +102,7 @@ class KNearestNeighbor(object):
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            dists[i, :] = np.sqrt(np.sum(np.square(X[i] - self.X_train[:]), axis=1))
+            dists[i] = np.sqrt(np.sum(np.square(self.X_train - X[i]), axis = 1))
             pass
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -133,11 +133,8 @@ class KNearestNeighbor(object):
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        # reference: https://github.com/lightaime/cs231n/blob/master/assignment1/cs231n/classifiers/k_nearest_neighbor_ss.py
-        M = np.dot(X, self.X_train.T)
-        te = np.square(X).sum(axis = 1)
-        tr = np.square(self.X_train).sum(axis = 1)
-        dists = np.sqrt(-2*M+tr+np.matrix(te).T) #tr add to line, te add to row
+        # reference: https://github.com/lightaime/cs231n/blob/ebeb3ef9c24d8be1f741fc24b3b63a3a543f3bb0/assignment1/cs231n/classifiers/k_nearest_neighbor.py#L127
+        dists = np.sqrt(-2*np.dot(X, self.X_train.T) + np.sum(np.square(self.X_train), axis = 1) + np.transpose([np.sum(np.square(X), axis = 1)]))
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -215,8 +212,8 @@ class KNearestNeighbor(object):
             #########################################################################
 
             # reference https://blog.csdn.net/bingo_6/article/details/80205341
-            if np.shape(np.shape(closest_y))[0] !=1:
-                closest_y=np.squeeze(closest_y)
+            # if np.shape(np.shape(closest_y))[0] !=1:
+            #     closest_y=np.squeeze(closest_y)
 
             y_pred[i] = np.argmax(np.bincount(closest_y))
             pass
