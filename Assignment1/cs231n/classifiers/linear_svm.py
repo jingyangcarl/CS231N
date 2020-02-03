@@ -36,13 +36,17 @@ def svm_loss_naive(W, X, y, reg):
             margin = scores[j] - correct_class_score + 1 # note delta = 1
             if margin > 0:
                 loss += margin
+                dW[:, j] += X[i, :]
+                dW[:, y[i]] += -X[i, :]
 
     # Right now the loss is a sum over all training examples, but we want it
     # to be an average instead so we divide by num_train.
     loss /= num_train
+    dW /= num_train
 
     # Add regularization to the loss.
     loss += reg * np.sum(W * W)
+    dW += reg * W
 
     #############################################################################
     # TODO:                                                                     #
@@ -54,6 +58,58 @@ def svm_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    #############################################################################
+    # NUMERICAL way of gradient esitmation, which is super slow and not accurate
+    # h = 0.0001                                                                
+    # for ii in range(dW.shape[0]):
+    #     for jj in range(dW.shape[1]):
+    #
+    #         W_after = W
+    #         W_after[ii, jj] += h
+    #         loss_after = 0.0
+    #         for i in range(num_train):
+    #             scores = X[i].dot(W_after)
+    #             correct_class_score = scores[y[i]]
+    #             for j in range(num_classes):
+    #                 if j == y[i]:
+    #                     continue
+    #                 margin = scores[j] - correct_class_score + 1 # note delta = 1
+    #                 if margin > 0:
+    #                     loss_after += margin
+    #
+    #         # Right now the loss is a sum over all training examples, but we want it
+    #         # to be an average instead so we divide by num_train.
+    #         loss_after /= num_train
+    #
+    #         # Add regularization to the loss.
+    #         loss_after += reg * np.sum(W * W)
+    #
+    #         # update dW
+    #         dW[ii, jj] = (loss_after - loss) / h
+    #############################################################################
+    # ANALYTICAL way of gradient calculation, which is fast and accurate
+    # Reference: https://math.stackexchange.com/questions/2572318/derivation-of-gradient-of-svm-loss
+    # Reference: http://cs231n.github.io/linear-classify/#svm
+    # Reference: https://blog.csdn.net/lanchunhui/article/details/70991228
+    ### Loss function for i-th sample (TeX):
+    # \begin{split}
+    # L_i =&\sum_{j\neq y_i}\max(0, s_j-s_{y_i}+1)\\
+    # =&\sum_{j\neq y_i} \left[ \max(0, w_j^Tx_i - w_{y_i}^Tx_i + 1) \right]
+    # \end{split}
+    ### Gradient Derivation (TeX):
+    # \begin{split}
+    # &\nabla_{w_{y_i}} L_i = - \left( \sum_{j\neq y_i} \mathbb{1}(w_j^Tx_i - w_{y_i}^Tx_i + \Delta > 0) \right) x_i\\
+    # &\nabla_{w_j} L_i = \mathbb{1}(w_j^Tx_i - w_{y_i}^Tx_i + \Delta > 0) x_i\quad j\neq y_i
+    # \end{split}
+    ### implementation is embeded in the code above
+    # TEST: run the following test to check
+    # import numpy as np
+    # a = np.zeros((3, 2))
+    # b = np.random.rand(6)
+    # b = np.reshape(b, (2, 3))
+    # a[:,0] += b[0,:]
+    #############################################################################
+    
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -78,6 +134,20 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    #############################################################################
+    # TEST: run the following test code to check
+    # a = np.random.randint(10, high=20, size=20) # generate a of size 20, where each element if in [10, 20)
+    # a = np.reshape(a, (5, 4))
+    # y_index = np.random.randint(4, size=5) # generate y_index of size 5, where each element is up to 4
+    # y = np.choose(y_index, a.T) # choose ys from each row of a at y_index
+    # margin = np.subtract(a, y[:, np.newaxis]) + 1 # subtract each row with corresponding elements in y
+    #############################################################################
+    scores = X.dot(W) # 500, 10
+    num_train = scores.shape[0] # 500
+    correct_class_score = np.choose(y, scores.T) # 500,
+    margin = np.subtract(scores, correct_class_score[:, np.newaxis]) + 1
+    margin[range(num_train), list(y)] = 0
+    loss = np.sum(margin, where=[margin>0]) / num_train + reg * np.sum(W*W)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
