@@ -33,6 +33,25 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    num_classes = W.shape[1]
+    num_train = X.shape[0]
+    for i in range(num_train):
+      scores = X[i].dot(W)
+      correct_class_score = scores[y[i]]
+      other_class_score_sum = 0
+      for j in range(num_classes):
+        other_class_score_sum += scores[j]
+        if j == y[i]:
+          continue
+      loss += -np.log(correct_class_score / other_class_score_sum)
+
+    # Right now the loss is a sum over all training examples, but we want it
+    # to be an average instead so we divide by num_train.
+    loss /= num_train
+
+    # Add regularization to the loss.
+    loss += reg * np.sum(W * W)
+
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
