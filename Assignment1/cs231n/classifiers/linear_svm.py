@@ -163,6 +163,13 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # reference: https://github.com/hartikainen/stanford-cs231n/blob/master/assignment1/cs231n/classifiers/linear_svm.py
+    grad_mask = (margin > 0).astype(int)
+    grad_mask[np.arange(y.shape[0]), y] = - np.sum(grad_mask, axis=1)
+    dW = np.dot(X.T, grad_mask)
+
+    dW /= float(num_train)
+    dW += reg * W
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
