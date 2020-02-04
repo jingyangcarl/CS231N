@@ -106,6 +106,8 @@ class LinearClassifier(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        # X times W, np.matmul(X, W) or X @ y either works, but X * W nor np.multiply(X, W)
+        y_pred = np.argmax(X @ self.W, axis=1)
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
