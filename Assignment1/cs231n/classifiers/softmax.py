@@ -33,24 +33,27 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # softmax function: L_i = -f_{y_i} + \log\sum_j e^{f_j}
+    # analytic gradient reference: https://github.com/Halfish/cs231n/blob/master/assignment1/cs231n/classifiers/softmax.py
     num_classes = W.shape[1]
     num_train = X.shape[0]
     for i in range(num_train):
       scores = X[i].dot(W)
       correct_class_score = scores[y[i]]
-      other_class_score_sum = 0
+      scores_exp_sum = np.sum(np.exp(scores))
+      loss += -correct_class_score + np.log(scores_exp_sum)
+      dW[:, y[i]] -= X[i]
       for j in range(num_classes):
-        other_class_score_sum += scores[j]
-        if j == y[i]:
-          continue
-      loss += -np.log(correct_class_score / other_class_score_sum)
+          dW[:, j] += np.exp(scores[j]) / scores_exp_sum * X[i]
 
     # Right now the loss is a sum over all training examples, but we want it
     # to be an average instead so we divide by num_train.
     loss /= num_train
+    dW /= num_train
 
     # Add regularization to the loss.
     loss += reg * np.sum(W * W)
+    dW += reg * W
 
     pass
 
@@ -77,6 +80,16 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    scores = X.dot(W)
+    num_train = scores.shape[0]
+    correct_class_score = np.choose(y, scores.T)
+    scores_exp_sum = np.sum(np.exp(scores), axis=1)
+    loss = np.sum(-correct_class_score + np.log(scores_exp_sum)) / num_train + reg * np.sum(W*W)
+    pass
+
+    counts = np.exp(scores) / scores_exp_sum.reshape(num_train, 1)
+    counts[range(num_train), y] -= 1
+    dW = np.dot(X.T, counts) / num_train + reg * W
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
