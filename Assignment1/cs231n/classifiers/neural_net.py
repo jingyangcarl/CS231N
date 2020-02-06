@@ -80,6 +80,8 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        scores_hidden = np.maximum(0, X @ W1 + b1)
+        scores = scores_hidden @ W2 + b2
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -98,6 +100,9 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        correct_class_score = scores[np.arange(N), y]
+        scores_exp_sum = np.sum(np.exp(scores), axis=1)
+        loss = np.sum(-correct_class_score + np.log(scores_exp_sum)) / N + reg * (np.sum(W1*W1) + np.sum(W2*W2))
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -111,6 +116,15 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        dscore = np.exp(scores) / scores_exp_sum.reshape(N, 1)
+        dscore[range(N), y] -= 1
+        dscore /= N
+        grads['W2'] = np.dot(scores_hidden.T, dscore) + reg * W2
+        grads['b2'] = np.sum(dscore, axis=0)
+        
+        dscores_hidden = np.dot(dscore, W2.T) * (scores_hidden > 0)
+        grads['W1'] = np.dot(X.T, dscores_hidden) + reg * W1
+        grads['b1'] = np.sum(dscores_hidden, axis=0)
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
