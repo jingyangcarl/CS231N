@@ -190,6 +190,17 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        # connect all hidden layers
+        hidden_dim_prev = input_dim
+        for i, hidden_dim in enumerate(hidden_dims):
+          # update Ws
+          self.params['W' + str(i+1)] = weight_scale * np.random.randn(hidden_dim_prev, hidden_dim)
+          hidden_dim_prev = hidden_dim
+          # update bs
+          self.params['b' + str(i+1)] = np.zeros(hidden_dim)
+        # connect last hidden layer to output layer
+        self.params['W' + str(self.num_layers)] = weight_scale * np.random.randn(hidden_dim_prev, num_classes)
+        self.params['b' + str(self.num_layers)] = np.zeros(num_classes)
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -252,7 +263,14 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+        
+        scores = X
+        caches = {}
+        # forward pass throuth all hidden layers
+        for layer in range(1, self.num_layers):
+          scores, caches[layer] = affine_relu_forward(scores, self.params['W' + str(layer)], self.params['b' + str(layer)])
+        # forward pass through the output layer
+        scores, caches[self.num_layers] = affine_forward(scores, self.params['W' + str(self.num_layers)], self.params['b' + str(self.num_layers)])
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -279,6 +297,22 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
+        # backward pass through the output layer
+        key_W = 'W'+str(self.num_layers)
+        key_b = 'b'+str(self.num_layers)
+        loss, dscores = softmax_loss(scores, y)
+        loss += 0.5 * self.reg * np.sum(self.params[key_W] * self.params[key_W])
+        dscores, grads[key_W], grads[key_b] = affine_backward(dscores, caches[self.num_layers])
+        grads[key_W] += self.reg * self.params[key_W]
+        
+        # backward pass through all hidden layers
+        for layer in range(self.num_layers-1, 0, -1):
+          key_W = 'W'+str(layer)
+          key_b = 'b'+str(layer)
+          loss += 0.5 * self.reg * np.sum(self.params[key_W] * self.params[key_W])
+          dscores, grads[key_W], grads[key_b] = affine_relu_backward(dscores, caches[layer])
+          grads[key_W] += self.reg * self.params[key_W]
 
         pass
 
