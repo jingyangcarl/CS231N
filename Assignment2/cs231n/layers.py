@@ -27,6 +27,8 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    x_reshape = np.reshape(x, (x.shape[0], -1))
+    out = x_reshape @ w + b
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -60,6 +62,13 @@ def affine_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # w.T shoudl be (M, D) dim
+    dx = dout @ w.T
+    dx = np.reshape(dx, x.shape)
+    # x.T should be (d1, ..., d_k, N) dim
+    dw = np.transpose(x, tuple(np.concatenate((np.arange(1, x.ndim), np.arange(0, 1))))) @ dout 
+    dw = np.reshape(dw, w.shape)
+    db = dout.T @ np.ones(dout.shape[0])
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -86,6 +95,7 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    out = np.maximum(0, x)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -113,6 +123,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # np.absolute(x) == x return a indicator matrix where the entries are positive or zero
+    dx = (np.absolute(x) == x) * dout
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
