@@ -279,7 +279,9 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    # reference: https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+    # reference: 
+    #   https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+    #   http://costapt.github.io/2016/06/26/batch-norm/
     # The computation graph can be expressed as following steps:
     # x ┬────────────────────┬ - ┬──────────────────────────────────────────────────┬ * ┬ * ┬ + ─ out
     #   └ np.mean(x, axis=0) ┘   └ **2 ─ np.mean(sq) ─ np.sqrt(var+eps) ─ 1/sqrtvar ┘   │   │
@@ -302,6 +304,7 @@ def batchnorm_backward(dout, cache):
     # step8: scalar gamma and shifter beta
     #        out = gamma * x_norm + beta
     
+    # initialization
     N,D = dout.shape
     x_norm, gamma, x_sub_mu, ivar, sqrtvar, var, eps = cache
     # step8
@@ -360,6 +363,13 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # initialization
+    N, _ = dout.shape
+    x_norm, gamma, _, ivar, _, _, _ = cache
+    # reference: https://costapt.github.io/2016/07/09/batch-norm-alt/
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_norm, axis=0)
+    dx = (gamma*ivar/N) * (N*dout - x_norm*dgamma - dbeta)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
