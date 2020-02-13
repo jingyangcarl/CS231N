@@ -205,6 +205,21 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        # calculate sample_mean and sample_var
+        sample_mean = np.mean(x, axis=0)
+        sample_var = np.var(x, axis=0)
+        # update runnint_mean and runnint_var
+        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var
+        # batch normalization
+        x_norm = (x - sample_mean) / np.sqrt(sample_var + eps)
+        out = gamma * x_norm + beta
+        # save intermediates
+        # reference: https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+        x_sum_mu = x - sample_mean
+        sqrtvar = np.sqrt(sample_var + eps)
+        ivar = 1 / sqrtvar
+        cache = (x_norm, gamma, x_sum_mu, ivar, sqrtvar, sample_var, eps)
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -220,6 +235,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        x_norm = (x - running_mean) / np.sqrt(running_var + eps)
+        out = gamma * x_norm + beta
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -262,6 +279,52 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # reference: https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+    # The computation graph can be expressed as following steps:
+    # x ┬────────────────────┬ - ┬──────────────────────────────────────────────────┬ * ┬ * ┬ + ─ out
+    #   └ np.mean(x, axis=0) ┘   └ **2 ─ np.mean(sq) ─ np.sqrt(var+eps) ─ 1/sqrtvar ┘   │   │
+    # gamma ────────────────────────────────────────────────────────────────────────────┘   │
+    # beta ─────────────────────────────────────────────────────────────────────────────────┘
+    # step1: calculate mean
+    #        mu = 1./N * np.sum(x, axis = 0)
+    # step2: subtract mean vector of every training examples
+    #        x_sub_mu = x - mu
+    # step3: square x_sub_mu
+    #        sq = x_sub_mu ** 2
+    # step4: calculate variance
+    #        var = 1./N * np.sum(sq, axis = 0)
+    # step5: square root variance plus epsilon
+    #        sqrtvar = np.sqrt(var + eps)
+    # step6: invert sqrtvar
+    #        ivar = 1./sqrtvar
+    # step7: normalize
+    #        x_norm = x_sub_mu * ivar
+    # step8: scalar gamma and shifter beta
+    #        out = gamma * x_norm + beta
+    
+    N,D = dout.shape
+    x_norm, gamma, x_sub_mu, ivar, sqrtvar, var, eps = cache
+    # step8
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_norm, axis=0)
+    dx_norm = dout * gamma
+    # step7
+    dx_sub_mu_7 = dx_norm * ivar
+    divar = np.sum(dx_norm * x_sub_mu, axis=0)
+    # step6
+    dsqrtvar = -1./(sqrtvar**2) * divar
+    # step5
+    dvar = 0.5 * ivar * dsqrtvar
+    # step4
+    dsq = 1./N * np.ones((N,D)) * dvar
+    # step3
+    dx_sub_mu_3 = 2 * x_sub_mu * dsq
+    # step2
+    dx_2 = dx_sub_mu_3 + dx_sub_mu_7
+    dmu = -1 * np.sum(dx_2, axis=0)
+    # step1
+    dx_1 = 1./N * np.ones((N,D)) * dmu
+    dx = dx_2 + dx_1
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
