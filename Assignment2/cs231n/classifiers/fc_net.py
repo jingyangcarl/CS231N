@@ -198,6 +198,7 @@ class FullyConnectedNet(object):
           hidden_dim_prev = hidden_dim
           # update bs
           self.params['b' + str(i+1)] = np.zeros(hidden_dim)
+          # batch normalization / layer normalization
           if self.normalization == 'batchnorm':
             self.params['gamma' + str(i+1)] = np.ones(hidden_dim)
             self.params['beta' + str(i+1)] = np.zeros(hidden_dim)
@@ -268,14 +269,20 @@ class FullyConnectedNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         
         scores = X
-        caches = {}
+        caches_layer = {}
+        caches_drop = {}
         # forward pass throuth all hidden layers
         for layer in range(1, self.num_layers):
+          # forward fully connected layer
           if self.normalization == 'batchnorm':
-            scores, caches[layer] = affine_bn_relu_forward(scores, self.params['W'+str(layer)], self.params['b'+str(layer)], self.params['gamma'+str(layer)], self.params['beta'+str(layer)], self.bn_params[layer-1])
-          else: scores, caches[layer] = affine_relu_forward(scores, self.params['W'+str(layer)], self.params['b'+str(layer)])
+            scores, caches_layer[layer] = affine_bn_relu_forward(scores, self.params['W'+str(layer)], self.params['b'+str(layer)], self.params['gamma'+str(layer)], self.params['beta'+str(layer)], self.bn_params[layer-1])
+          else: 
+            scores, caches_layer[layer] = affine_relu_forward(scores, self.params['W'+str(layer)], self.params['b'+str(layer)])
+          # dropout
+          if self.use_dropout:
+            scores, caches_drop[layer] = dropout_forward(scores, self.dropout_param)
         # forward pass through the output layer
-        scores, caches[self.num_layers] = affine_forward(scores, self.params['W'+str(self.num_layers)], self.params['b'+str(self.num_layers)])
+        scores, caches_layer[self.num_layers] = affine_forward(scores, self.params['W'+str(self.num_layers)], self.params['b'+str(self.num_layers)])
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -308,7 +315,7 @@ class FullyConnectedNet(object):
         key_b = 'b'+str(self.num_layers)
         loss, dscores = softmax_loss(scores, y)
         loss += 0.5 * self.reg * np.sum(self.params[key_W] * self.params[key_W])
-        dscores, grads[key_W], grads[key_b] = affine_backward(dscores, caches[self.num_layers])
+        dscores, grads[key_W], grads[key_b] = affine_backward(dscores, caches_layer[self.num_layers])
         grads[key_W] += self.reg * self.params[key_W]
         
         # backward pass through all hidden layers
@@ -316,13 +323,18 @@ class FullyConnectedNet(object):
           key_W = 'W'+str(layer)
           key_b = 'b'+str(layer)
 
-          # backward pass
+          # dropout
+          if self.use_dropout:
+            dscores = dropout_backward(dscores, caches_drop[layer])
+
+          # backward fully connected layer
           if self.normalization == 'batchnorm':
             key_gamma = 'gamma'+str(layer)
             key_beta = 'beta'+str(layer)
-            dscores, grads[key_W], grads[key_b], grads[key_gamma], grads[key_beta] = affind_bn_relu_backward(dscores, caches[layer])
-          else: dscores, grads[key_W], grads[key_b] = affine_relu_backward(dscores, caches[layer])
-          
+            dscores, grads[key_W], grads[key_b], grads[key_gamma], grads[key_beta] = affind_bn_relu_backward(dscores, caches_layer[layer])
+          else: 
+            dscores, grads[key_W], grads[key_b] = affine_relu_backward(dscores, caches_layer[layer])
+
           # regularize loss
           loss += 0.5 * self.reg * np.sum(self.params[key_W] * self.params[key_W])
           # regularize grads
