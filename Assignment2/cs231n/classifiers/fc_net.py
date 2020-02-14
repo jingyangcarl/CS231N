@@ -198,6 +198,9 @@ class FullyConnectedNet(object):
           hidden_dim_prev = hidden_dim
           # update bs
           self.params['b' + str(i+1)] = np.zeros(hidden_dim)
+          if self.normalization == 'batchnorm':
+            self.params['gamma' + str(i+1)] = np.ones(hidden_dim)
+            self.params['beta' + str(i+1)] = np.zeros(hidden_dim)
         # connect last hidden layer to output layer
         self.params['W' + str(self.num_layers)] = weight_scale * np.random.randn(hidden_dim_prev, num_classes)
         self.params['b' + str(self.num_layers)] = np.zeros(num_classes)
@@ -268,9 +271,11 @@ class FullyConnectedNet(object):
         caches = {}
         # forward pass throuth all hidden layers
         for layer in range(1, self.num_layers):
-          scores, caches[layer] = affine_relu_forward(scores, self.params['W' + str(layer)], self.params['b' + str(layer)])
+          if self.normalization == 'batchnorm':
+            scores, caches[layer] = affine_bn_relu_forward(scores, self.params['W'+str(layer)], self.params['b'+str(layer)], self.params['gamma'+str(layer)], self.params['beta'+str(layer)], self.bn_params[layer-1])
+          else: scores, caches[layer] = affine_relu_forward(scores, self.params['W'+str(layer)], self.params['b'+str(layer)])
         # forward pass through the output layer
-        scores, caches[self.num_layers] = affine_forward(scores, self.params['W' + str(self.num_layers)], self.params['b' + str(self.num_layers)])
+        scores, caches[self.num_layers] = affine_forward(scores, self.params['W'+str(self.num_layers)], self.params['b'+str(self.num_layers)])
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -310,10 +315,18 @@ class FullyConnectedNet(object):
         for layer in range(self.num_layers-1, 0, -1):
           key_W = 'W'+str(layer)
           key_b = 'b'+str(layer)
-          loss += 0.5 * self.reg * np.sum(self.params[key_W] * self.params[key_W])
-          dscores, grads[key_W], grads[key_b] = affine_relu_backward(dscores, caches[layer])
-          grads[key_W] += self.reg * self.params[key_W]
 
+          # backward pass
+          if self.normalization == 'batchnorm':
+            key_gamma = 'gamma'+str(layer)
+            key_beta = 'beta'+str(layer)
+            dscores, grads[key_W], grads[key_b], grads[key_gamma], grads[key_beta] = affind_bn_relu_backward(dscores, caches[layer])
+          else: dscores, grads[key_W], grads[key_b] = affine_relu_backward(dscores, caches[layer])
+          
+          # regularize loss
+          loss += 0.5 * self.reg * np.sum(self.params[key_W] * self.params[key_W])
+          # regularize grads
+          grads[key_W] += self.reg * self.params[key_W]
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****

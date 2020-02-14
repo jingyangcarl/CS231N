@@ -208,7 +208,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # calculate sample_mean and sample_var
         sample_mean = np.mean(x, axis=0)
         sample_var = np.var(x, axis=0)
-        # update runnint_mean and runnint_var
+        # update running_mean and running_var
         running_mean = momentum * running_mean + (1 - momentum) * sample_mean
         running_var = momentum * running_var + (1 - momentum) * sample_var
         # batch normalization
@@ -218,7 +218,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # reference: https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
         x_sum_mu = x - sample_mean
         sqrtvar = np.sqrt(sample_var + eps)
-        ivar = 1 / sqrtvar
+        ivar = 1. / sqrtvar
         cache = (x_norm, gamma, x_sum_mu, ivar, sqrtvar, sample_var, eps)
         pass
 
@@ -366,6 +366,7 @@ def batchnorm_backward_alt(dout, cache):
     # initialization
     N, _ = dout.shape
     x_norm, gamma, _, ivar, _, _, _ = cache
+    # backprop
     # reference: https://costapt.github.io/2016/07/09/batch-norm-alt/
     dbeta = np.sum(dout, axis=0)
     dgamma = np.sum(dout * x_norm, axis=0)
@@ -416,6 +417,16 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # reference: https://mlexplained.com/2018/01/13/weight-normalization-and-layer-normalization-explained-normalization-in-deep-learning-part-2/
+    # calculate layer_mean and layer_var
+    layer_mean = np.mean(x, axis=1)
+    layer_var = np.var(x, axis=1)
+    # layer normalization
+    x_norm = ((x.T - layer_mean) / np.sqrt(layer_var + eps)).T
+    out = gamma * x_norm + beta
+    # save intermediates
+    ivar = 1. / np.sqrt(layer_var + eps)
+    cache = (x_norm, gamma, ivar)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -451,6 +462,15 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # initialization
+    _, D = dout.shape
+    x_norm, gamma, ivar = cache
+    # backprop
+    # reference: https://github.com/hxuaj/my-repo/blob/2f541e33e92a2f6e313b05a227dbbf2e21b4fbba/Group%20Normalization/Group_norm_notebook.md
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_norm, axis=0)
+    dx_norm = dout * gamma
+    dx = ((1./D) * ivar * (D*dx_norm.T - np.sum(dx_norm.T, axis=0) - x_norm.T*np.sum(dx_norm.T * x_norm.T, axis=0))).T
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
